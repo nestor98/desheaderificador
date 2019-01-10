@@ -1,14 +1,20 @@
 %{
+/******************************************************************************************
+ * Fichero: desheaderificador.l                                                           *
+ * Autor: Nestor Monzon                                                                   *
+ * Coms: Toma como entrada el .hpp de una clase de c++ y genera la plantilla del .cpp     *
+ *       Ver README.md para más detalles                                                  *
+ ******************************************************************************************/
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
 
-char* include = "";
-char* nomClase = "";
-int enClase = 0; // Valdrá 1 cuando hayamos entrado en clase
+char* include = "";  // #include del .hpp
+char* nomClase = ""; // Nombre de la clase
+int enClase = 0;     // Valdrá 1 cuando hayamos entrado en clase
 int cabeceraLeida = 0; // Valdra 1 cuando se ha leido un caracter distinto de un comentario
 
-
+// Gestiona el fin de la cabecera
 void finCabecera() {
     if (!cabeceraLeida) {
         cabeceraLeida = 1;
@@ -16,7 +22,7 @@ void finCabecera() {
     }
 }
 
-
+// Devuelve el nombre de la clase contenido en <leido>
 void obtenerNomClase (char* leido) {
     int i = 0;
     char car = leido[0];
@@ -27,7 +33,8 @@ void obtenerNomClase (char* leido) {
     leido[i] = '\0'; // Cortamos la cadena al final del nombre de la clase
 }
 
-//Devuelve 1 sii no es constructor ni destructor: hay un caracter distinto en los strlen(nombreClase) caracteres
+// Devuelve 1 sii la funcion en <orig> no es constructor ni destructor: hay un caracter distinto en 
+// los strlen(nombreClase) primeros caracteres
 int noEsConstructorDestructor(const char* orig, const char* nomClase) {
     int i = 0;
     int diferentes = 0;
@@ -45,14 +52,13 @@ int noEsConstructorDestructor(const char* orig, const char* nomClase) {
 }
 
 
-
-//strncmp(copia+numEspacios, nomClase, strlen(nomClase))!=0 || strncmp(copia+numEspacios+1, nomClase, strlen(nomClase))!=0
+// <Final> contendrá la cadena de la funcion en <orig> con el formato de las cabeceras de un .cpp
 void descomponerFuncion (const char* orig, const char* nomClase, char** final) {
     int numEspacios = 0;
-    while (orig[numEspacios] == ' ') {
+    while (orig[numEspacios] == ' ' || orig[numEspacios] == '\t') {
         numEspacios++;   
     }
-    // Le quitamos los espacios del principio (tb podria arreglar la @#$! ER, pero cuesta mas)
+    // Le quitamos los espacios y tabulaciones del principio (tb podria arreglar la @#$! ER, pero cuesta mas)
     char* copia = strdup(orig)+numEspacios;
     char* mismoNomClase = strdup(nomClase);
     char* token = "";
@@ -170,18 +176,21 @@ int main(int argc, char* argv[]) {
             printf("Error al abrir el .hpp\n");
             exit(1);
         }
-        if (fd[0] == 0) {
-            fprintf(stderr, "Entrada redireccionada\n");
+        if (fd[0] != 0) {
+            fprintf(stderr, "Entrada no redireccionada correctamente\n");
+            exit(1);
         }
         if ( (fd[1] = creat(argv[2], 0640)) == -1) {
-            printf("Error en creat\n");
+            printf("Error al crear el .cpp\n");
             exit(1);
         }
         close(fd[1]);
         close(1);
-        if( (fd[1] = open(argv[2], O_WRONLY)) == 1) {
-            fprintf(stderr, "Salida redireccionada\n");
+        if( (fd[1] = open(argv[2], O_WRONLY)) != 1) {
+            fprintf(stderr, "Salida no redireccionada\n");
+            exit(1);
         }
+        fprintf(stderr, "Todo correcto, %s creado\n", argv[2]);
         include = strdup(argv[1]); // include el .hpp al principio
     	yylex();
     }
