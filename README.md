@@ -10,3 +10,5 @@ No *muy* probado.
     10/01/19: Añadido soporte a .hpp con tabulaciones ('\t') además de espacios
     10/01/19: Añadida cabecera al .l
 
+Problemas:
+  -No funciona con clases anidadas!
