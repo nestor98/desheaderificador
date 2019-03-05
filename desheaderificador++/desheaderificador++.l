@@ -1,6 +1,6 @@
 %{
 /******************************************************************************************
- * Fichero: desheaderificador++.l                                                           *
+ * Fichero: desheaderificador++.l                                                         *
  * Autor: Nestor Monzon                                                                   *
  * Coms: Toma como entrada el .hpp de una clase de c++ y genera la plantilla del .cpp     *
  *       Ver README.md para más detalles                                                  *
@@ -119,6 +119,8 @@ string descomponerFuncion (const string orig, const string ambitos[], const int 
     return sfinal + original.substr(0, original.length()-1) + " {\n    \n}\n";
 }
 
+
+/******************************* Fin funciones c++ ***********************************/
 %}
 
 %option c++ noyywrap
@@ -175,12 +177,14 @@ funcion   [a-zA-Z~ ][a-zA-z0-9_,]*{espacios}{variable}{espacios}"("[^)\n]*")"{es
                                 }
                             }
 
-class[ ]+                       BEGIN(clase); /*nAmbito++*/; finCabecera();
+class[ ]+                       BEGIN(clase); nAmbito++; finCabecera();
 
 <clase>{variable}[ \t\n]*       {
-                                nomClases[nAmbito++] = obtenerNomClase(yytext);
+                                nomClases[nAmbito-1] = obtenerNomClase(yytext);
                                 }
 <clase>"{"[ \t]*\n+         BEGIN(funciones); cout << endl;
+
+<funciones>class[ ]+           BEGIN(clase); nAmbito++; finCabecera();
 
 <funciones>"private:"           ; // Ignoramos private
 <funciones>"public:"           { ; // Ignoramos public
@@ -212,7 +216,7 @@ class[ ]+                       BEGIN(clase); /*nAmbito++*/; finCabecera();
                             }
                             else {
                                 //Si no, al modo "clase" (aún estamos en una)
-                                BEGIN(clase); 
+                                BEGIN(funciones); 
                             }
                            }
 <funciones>[\n]+           //cout << endl;
