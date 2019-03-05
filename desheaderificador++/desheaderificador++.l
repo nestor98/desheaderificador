@@ -8,7 +8,7 @@
 #include <iostream>
 #include <string>
 //#include <string.h>
-//#include <fcntl.h>
+#include <fcntl.h>
 
 using namespace std;
 
@@ -31,6 +31,14 @@ void finCabecera() {
     }
 }
 
+/*
+string stryytext() {
+    return string(yytext);
+}*/
+
+
+
+
 // Devuelve el nombre de la clase contenido en <leido>
 string obtenerNomClase (const string leido) {
     int i = 0;
@@ -41,9 +49,12 @@ string obtenerNomClase (const string leido) {
     }
     return leido.substr(0, i); // Cortamos la cadena al final del nombre de la clase
 }
+
+
 // Devuelve el prefijo necesario según nAmbito: (como "Clase::Subclase1::")
 string construirAmbito(const string nomClases[], const int nAmbito) {
     string ambito = nomClases[0] + "::";
+    cerr << "ambito : " << ambito << endl;
     for (int i = 1; i < nAmbito; i++) {
         ambito += nomClases[i] + "::";
     }
@@ -110,6 +121,9 @@ string descomponerFuncion (const string orig, const string ambitos[], const int 
 
 %}
 
+%option c++ noyywrap
+
+
 %x comLinea
 %x comParrafo
 %x clase
@@ -131,7 +145,7 @@ funcion   [a-zA-Z~ ][a-zA-z0-9_,]*{espacios}{variable}{espacios}"("[^)\n]*")"{es
                         ECHO;   
                     }
                   }
-<comLinea>[\n]+	  { if (!cabeceraLeida) printf("\n");
+<comLinea>[\n]+	  { if (!cabeceraLeida) cout << endl;
                     if(nAmbito > 0){
                         BEGIN(funciones); // Añade 1 al contador de coms y finaliza el com.
                     }
@@ -161,13 +175,12 @@ funcion   [a-zA-Z~ ][a-zA-z0-9_,]*{espacios}{variable}{espacios}"("[^)\n]*")"{es
                                 }
                             }
 
-class[ ]+                       BEGIN(clase); nAmbito++; finCabecera();
+class[ ]+                       BEGIN(clase); /*nAmbito++*/; finCabecera();
 
 <clase>{variable}[ \t\n]*       {
-                                nomClases[nAmbito] = strdup(yytext);
-                                obtenerNomClase(nomClases[nAmbito++]);
+                                nomClases[nAmbito++] = obtenerNomClase(yytext);
                                 }
-<clase>"{"[ \t]*\n+         BEGIN(funciones); printf("\n");
+<clase>"{"[ \t]*\n+         BEGIN(funciones); cout << endl;
 
 <funciones>"private:"           ; // Ignoramos private
 <funciones>"public:"           { ; // Ignoramos public
@@ -182,12 +195,11 @@ class[ ]+                       BEGIN(clase); nAmbito++; finCabecera();
 
 <funciones>[ \t]+                      // Se come espacios...
 
-[ \t]+                      printf(" ");// Comprime espacios...
-<funciones>{funcion}        {char* transformada = "";
-                             char ambito[5*MAXNOM];
-                             construirAmbito(nomClases, nAmbito, &ambito); // Prefijo "Clase::SubClase::" etc
-                            descomponerFuncion(yytext, ambito, &transformada);
-                            printf("\n%s {\n    \n}\n", transformada);}
+[ \t]+                      cout << " ";// Comprime espacios...
+<funciones>{funcion}        {
+                            cout << descomponerFuncion(string(yytext), nomClases, nAmbito) << endl;
+                            
+                            }
                             
 {variable};                       
 <funciones>{variable};                 // Nos las comemos tambien supongo
@@ -203,42 +215,48 @@ class[ ]+                       BEGIN(clase); nAmbito++; finCabecera();
                                 BEGIN(clase); 
                             }
                            }
-<funciones>[\n]+           //printf("\n");
-[\n]+	                   printf("\n");
+<funciones>[\n]+           //cout << endl;
+[\n]+	                   cout << "\n";
 [^/\n]                     ECHO;
 
 %%
 
+
 int main(int argc, char* argv[]) {
 
     if (argc<3) {
-        printf("Invocar como: \n%s <fichero.hpp> <fichero.cpp>\n(sin <>)", argv[0]);
+        cerr << "Invocar como: \n " << argv[0] << " <fichero.hpp> <fichero.cpp>\n";
     }
     else {
         int fd[2];
         close(0);
         if ( (fd[0] = open(argv[1], O_RDONLY)) == -1) {
-            printf("Error al abrir el .hpp\n");
+            cerr << "Error al abrir el .hpp\n";
             exit(1);
         }
         if (fd[0] != 0) {
-            fprintf(stderr, "Entrada no redireccionada correctamente\n");
+            cerr << "Entrada no redireccionada correctamente\n";
             exit(1);
         }
         if ( (fd[1] = creat(argv[2], 0640)) == -1) {
-            printf("Error al crear el .cpp\n");
+            cerr << "Error al crear el .cpp\n";
             exit(1);
         }
         close(fd[1]);
         close(1);
         if( (fd[1] = open(argv[2], O_WRONLY)) != 1) {
-            fprintf(stderr, "Salida no redireccionada\n");
+            cerr << "Salida no redireccionada\n";
             exit(1);
         }
         
-        include = strdup(argv[1]); // include el .hpp al principio
-    	yylex();
-    	fprintf(stderr, "Todo correcto, %s creado\n", argv[2]);
+        include = string(argv[1]); // include el .hpp al principio
+        
+        // Cosas de Flex++:
+        FlexLexer* lexer = new yyFlexLexer;
+        while (lexer -> yylex() != 0);
+        
+        
+    	cerr << "Todo correcto, " << argv[2] << " creado\n";
     }
     return 0;
 }
