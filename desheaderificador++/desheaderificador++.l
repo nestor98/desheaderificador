@@ -20,29 +20,36 @@ int nAmbito = 0;     // nº de clases definidas (más específicamente, ámbito 
 string nomClases[MAXNOM];    // Nombres de las clases anidadas (nomClases[0] la mayor, etc.)  HE CAMBIADO ESTO 27/02
 // int nAmbito > 0 = 0;     // Valdrá 1 cuando hayamos entrado en clase [MODIFICACION 28/02: Con el añadido
                             // de nAmbito no debería hacer falta
-int cabeceraLeida = 0; // Valdra 1 cuando se ha leido un caracter distinto de un comentario
+bool cabeceraLeida = false; // Valdra 1 cuando se ha leido un caracter distinto de un comentario
 
 // Gestiona el fin de la cabecera
 void finCabecera() {
     if (!cabeceraLeida) {
-        cabeceraLeida = 1;
-        printf("#include \"%s\"\n", include);
+        cabeceraLeida = true;
+        cout << "#include \"" << include << "\"" << endl; 
     }
 }
 
 // Devuelve el nombre de la clase contenido en <leido>
-void obtenerNomClase (char* leido) {
+string obtenerNomClase (const string leido) {
     int i = 0;
     char car = leido[0];
     while (car != ' ' && car != '\t' && car != '{' && car != '\n' && car != ';' && car != '\0') {
         i++;
         car = leido[i];
     }
-    leido[i] = '\0'; // Cortamos la cadena al final del nombre de la clase
+    return leido.substr(0, i); // Cortamos la cadena al final del nombre de la clase
 }
 
+// Devuelve el prefijo necesario según nAmbito: (como "Clase::Subclase1::")
+string construirAmbito(const string nomClases[], const int nAmbito) {
+    string ambito = nomClases[0];
+    for (int i = 1; i < nAmbito; i++) {
+        ambito += nomClases[i];
+    }
+    return ambito;
 
-void construirAmbito(const char* nomClases[], const int nAmbito, char** ambitoFin) {
+/*  //////mecagoenc///// Version de C que *ni funcionaba* //////mecagoenc/////
     char* copia = strdup(nomClases[0]);
     *ambitoFin = "";
     int i;
@@ -54,20 +61,22 @@ void construirAmbito(const char* nomClases[], const int nAmbito, char** ambitoFi
     
     // Problemas aqui y en descomponerFuncion char* final[]
     
+    ///////////////////////mecagoenc///////////////////////////////7
+*/       
 }
 
 
-// Devuelve 1 sii la funcion en <orig> no es constructor ni destructor: hay un caracter distinto en 
+// Devuelve true sii la funcion en <orig> no es constructor ni destructor: hay un caracter distinto en 
 // los strlen(nombreClase) primeros caracteres
-int noEsConstructorDestructor(const char* orig, const char* nomClase) {
+bool noEsConstructorDestructor(const string orig, const string nomClase) {
     int i = 0;
-    int diferentes = 0;
+    bool diferentes = false;
     int distancia = 0;
     
     if (orig[0] == '~') { // Destructor
         distancia++;
      } 
-    while (i<strlen(nomClase) && !diferentes && i+distancia<strlen(orig)) {
+    while (i<nomClase.length() && !diferentes && i+distancia<orig.length()) {
         diferentes = (orig[i+distancia] != nomClase[i]);
         i++;
     }
@@ -75,8 +84,8 @@ int noEsConstructorDestructor(const char* orig, const char* nomClase) {
 }
 
 
-// <Final> contendrá la cadena de la funcion en <orig> con el formato de las cabeceras de un .cpp
-void descomponerFuncion (const char* orig, const char* nomClase, char** final) {
+// Devuelve la cadena de la funcion en <orig> con el formato de las cabeceras de un .cpp
+string descomponerFuncion (const string orig, const string nomClase) {
     int numEspacios = 0;
     while (orig[numEspacios] == ' ' || orig[numEspacios] == '\t') {
         numEspacios++;   
