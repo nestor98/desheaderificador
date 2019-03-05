@@ -1,6 +1,6 @@
 %{
 /******************************************************************************************
- * Fichero: desheaderificador.l                                                           *
+ * Fichero: desheaderificador++.l                                                           *
  * Autor: Nestor Monzon                                                                   *
  * Coms: Toma como entrada el .hpp de una clase de c++ y genera la plantilla del .cpp     *
  *       Ver README.md para más detalles                                                  *
@@ -54,7 +54,7 @@ string obtenerNomClase (const string leido) {
 // Devuelve el prefijo necesario según nAmbito: (como "Clase::Subclase1::")
 string construirAmbito(const string nomClases[], const int nAmbito) {
     string ambito = nomClases[0] + "::";
-    cerr << "ambito : " << ambito << endl;
+    //cerr << "ambito : " << ambito << endl;
     for (int i = 1; i < nAmbito; i++) {
         ambito += nomClases[i] + "::";
     }
