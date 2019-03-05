@@ -4,3 +4,9 @@
 *.hpp
 
 desheaderificador\+\+/pruebadestrtok\.o
+
+desheaderificador\+\+/a\.out
+
+desheaderificador\+\+/existeFlex\+\+\.l
+
+*.cc
