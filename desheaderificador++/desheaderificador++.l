@@ -132,7 +132,7 @@ string descomponerFuncion (const string orig, const string ambitos[], const int 
 %x funciones
 
 espacios  [ \t]*
-variable  [a-zA-Z][a-zA-z0-9_,.="*":<>& ]*
+variable  [a-zA-Z][a-zA-z0-9_,.="*":<>&\[\] ]*
 using     ["using "]{variable}
 funcion   [a-zA-Z~ ][a-zA-z0-9_,]*{espacios}{variable}{espacios}"("[^)\n]*")"{espacios}"const"?;
 
