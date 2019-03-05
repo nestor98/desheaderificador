@@ -6,6 +6,7 @@
  *       Ver README.md para más detalles                                                  *
  ******************************************************************************************/
 #include <iostream>
+#include <string>
 //#include <string.h>
 //#include <fcntl.h>
 
@@ -40,12 +41,11 @@ string obtenerNomClase (const string leido) {
     }
     return leido.substr(0, i); // Cortamos la cadena al final del nombre de la clase
 }
-
 // Devuelve el prefijo necesario según nAmbito: (como "Clase::Subclase1::")
 string construirAmbito(const string nomClases[], const int nAmbito) {
-    string ambito = nomClases[0];
+    string ambito = nomClases[0] + "::";
     for (int i = 1; i < nAmbito; i++) {
-        ambito += nomClases[i];
+        ambito += nomClases[i] + "::";
     }
     return ambito;
 
@@ -85,32 +85,28 @@ bool noEsConstructorDestructor(const string orig, const string nomClase) {
 
 
 // Devuelve la cadena de la funcion en <orig> con el formato de las cabeceras de un .cpp
-string descomponerFuncion (const string orig, const string nomClase) {
+// (especificando el ambito apropiado segun ambitos[] y nAmbito)
+string descomponerFuncion (const string orig, const string ambitos[], const int nAmbito) {
     int numEspacios = 0;
     while (orig[numEspacios] == ' ' || orig[numEspacios] == '\t') {
         numEspacios++;   
     }
-    // Le quitamos los espacios y tabulaciones del principio (tb podria arreglar la @#$! ER, pero cuesta mas)
-    char* copia = strdup(orig)+numEspacios;
-    char* mismoNomClase = strdup(nomClase);
-    char* token = "";
-    if (noEsConstructorDestructor(copia, mismoNomClase)) {
+    // Le quitamos los espacios y tabulaciones del principio 
+    // (tb podria arreglar la @#$! ER, pero cuesta mas)
+    string original = orig.substr(numEspacios); // orig sin espacios iniciales
+    string tipo = ""; // tipo de la funcion (int, void...)
+    // Si nAmbito == 0, no es un constructor
+    if (nAmbito == 0 || noEsConstructorDestructor(original, ambitos[nAmbito-1])) {
         // Solo si no es constructor o destructor...
-        if ((token = strtok(copia, " ")) != NULL) { // Toma el tipo de la funcion (char, int)...
-           strcat(token, " ");   // Con " " al final...
-        }
-
-        copia = strdup(orig)+numEspacios+strlen(copia);
+        int posEsp = original.find(" "); // Posicion del 1er espacio
+        tipo = original.substr(0, posEsp+1); // substr hasta " " (incluido)
+        original = original.substr(posEsp+1); // original sin el tipo
     }
-    *final = strdup(token);
-    strcat(*final, nomClase); // Le concatena el nombre de la clase
-    strcat(*final, "::");       // Y "::"
-    if ((token = strtok(copia, ";")) != NULL){       // Cortamos el resto de la funcion hasta ";"
-        strcat(*final, token);    // Y lo concatenamos
-    }
-    
+    string sfinal = tipo + construirAmbito(nomClases, nAmbito); // Ej: "int Tupla::"
+    //sfinal += original.substr(original.length()-1); 
+    // Añadimos el resto de la funcion, sin el ultimo ";" (ultimo caracter -> length-1)
+    return sfinal + original.substr(0, original.length()-1) + " {\n    \n}\n";
 }
-
 
 %}
 
