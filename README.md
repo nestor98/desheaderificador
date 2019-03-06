@@ -10,6 +10,7 @@ No *muy* probado.
     10/01/19: Añadido soporte a .hpp con tabulaciones ('\t') además de espacios
     10/01/19: Añadida cabecera al .l
     05/03/19: Traducido a c++ con Flex++. Ahora debería funcionar con clases anidadas. 
+    06/03/19: Arreglados problemas con metodos que devuelven la propia clase
 
 Problemas:
   -Posibles fallos con tipos de datos genéricos, no lo he probado. 
