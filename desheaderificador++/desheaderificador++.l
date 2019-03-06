@@ -118,10 +118,8 @@ string descomponerFuncion (const string orig, const string ambitos[], const int 
      
             tipo += original.substr(posEsp, original.substr(posEsp).find(" ")+1); 
             // le añade substr de original hasta el segundo " " incluido
-            cerr << "posEsp = " << posEsp << "  \"" << tipo << "\"" << endl;
         }
         original = original.substr(tipo.length()); // original sin el tipo
-        cerr << "\"" << original << "\"" << endl;
     }
     string sfinal = tipo + construirAmbito(nomClases, nAmbito); // Ej: "int Tupla::"
     //sfinal += original.substr(original.length()-1); 
