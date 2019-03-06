@@ -31,12 +31,6 @@ void finCabecera() {
     }
 }
 
-/*
-string stryytext() {
-    return string(yytext);
-}*/
-
-
 
 
 // Devuelve el nombre de la clase contenido en <leido>
@@ -88,8 +82,17 @@ bool noEsConstructorDestructor(const string orig, const string nomClase) {
         distancia++;
      } 
     while (i<nomClase.length() && !diferentes && i+distancia<orig.length()) {
+        // Comparamos los primeros caracteres con el nomClase
         diferentes = (orig[i+distancia] != nomClase[i]);
+        // Si alguno es distinto, no es constructor o destructor
         i++;
+    }
+    if (!diferentes) { // Caso especial: funciones que devuelven la propia clase
+        while (i<orig.length() && orig[i+distancia] != '(') { // Avanzamos hasta el '('
+            // Tampoco es constructor o dest si hay un caracter distinto de espacios
+            diferentes = (orig[i+distancia] != ' ') || (orig[i+distancia] != '\t'); 
+            i++;
+        } // Avanzamos espacios
     }
     return diferentes;
 }
