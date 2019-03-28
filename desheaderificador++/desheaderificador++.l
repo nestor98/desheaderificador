@@ -37,7 +37,7 @@ void finCabecera() {
 string obtenerNomClase (const string leido) {
     int i = 0;
     char car = leido[0];
-    while (car != ' ' && car != '\t' && car != '{' && car != '\n' && car != ';' && car != '\0') {
+    while (car != ' ' && car != '\t' && car != '{' && car != '\n' && car != ';' && car != '\0' && car != ':') {
         i++;
         car = leido[i];
     }
@@ -114,8 +114,9 @@ string descomponerFuncion (const string orig, const string ambitos[], const int 
         // Solo si no es constructor o destructor...
         int posEsp = original.find(" ") + 1; // Posicion del 1er espacio
         tipo = original.substr(0, posEsp);   // substr hasta " " (incluido)
-        if (tipo == "const ") { // Caso especial, la funcion devuelve un objeto temporal constante
-     
+        if (tipo == "const " || tipo == "virtual ") { 
+        // Casos especiales, la funcion devuelve un objeto temporal constante
+        // o bien es un metodo virtual
             tipo += original.substr(posEsp, original.substr(posEsp).find(" ")+1); 
             // le añade substr de original hasta el segundo " " incluido
         }
@@ -139,10 +140,10 @@ string descomponerFuncion (const string orig, const string ambitos[], const int 
 %x clase
 %x funciones
 
-espacios  [ \t]*
+esp  [ \t]*
 variable  [a-zA-Z][a-zA-z0-9_,.="*":<>&\[\] ]*
 using     ["using "]{variable}
-funcion   [a-zA-Z~ ][a-zA-z0-9_,]*{espacios}{variable}{espacios}"("[^)\n]*")"{espacios}"const"?;
+funcion   [a-zA-Z~ ][a-zA-z0-9_,]*{esp}{variable}{esp}"("[^)\n]*")"{esp}"const"?{esp}"override"?;
 
 %%
     
