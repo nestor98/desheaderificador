@@ -17,4 +17,4 @@ No *muy* probado.\
 Problemas:\
   -Posibles fallos con tipos de datos genéricos, no lo he probado. \
   -Lo mismo con casos raros de herencias, clases anidadas complicadas, 
-  cualquier cosa que no conoczca de sintaxis... \
+  cualquier cosa que no conoczca de sintaxis... 
