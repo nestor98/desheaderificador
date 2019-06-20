@@ -1,10 +1,11 @@
 %{
-/******************************************************************************************
+/* ************************************************************************************** *
  * Fichero: desheaderificador++.l                                                         *
  * Autor: Nestor Monzon                                                                   *
  * Coms: Toma como entrada el .hpp de una clase de c++ y genera la plantilla del .cpp     *
  *       Ver README.md para más detalles                                                  *
- ******************************************************************************************/
+ * ************************************************************************************** *
+ */
 #include <iostream>
 #include <string>
 //#include <string.h>
@@ -13,7 +14,7 @@
 using namespace std;
 
 const int MAXNOM = 50; // Max de caracteres del nombre de una clase
-
+bool flagV = false; // flag para copiar todos los comentarios o no (por defecto no)
 
 string include = "";  // #include del .hpp
 int nAmbito = 0;     // nº de clases definidas (más específicamente, ámbito actual: 
@@ -27,7 +28,7 @@ bool cabeceraLeida = false; // Valdra 1 cuando se ha leido un caracter distinto 
 void finCabecera() {
     if (!cabeceraLeida) {
         cabeceraLeida = true;
-        cout << "#include \"" << include << "\"" << endl; 
+        cout << endl << "#include \"" << include << "\"" << endl; 
     }
 }
 
@@ -148,15 +149,16 @@ funcion   [a-zA-Z~ ][a-zA-z0-9_,]*{esp}{variable}{esp}"("[^)\n]*")"{esp}"const"?
 %%
     
 
-"#ifndef"		  BEGIN (comLinea); finCabecera(); // Ignoro #defines y tal
-"#define"		  BEGIN (comLinea); finCabecera();
-"#endif"		  BEGIN (comLinea); finCabecera();
+#"include ".*$	  ECHO; // Dejo los includes
+#.*               finCabecera(); // Ignoro #defines y tal
 {using};          ECHO; finCabecera();
-<comLinea>.*      {if (!cabeceraLeida) {// Ignora el comentario, excepto si es la cabecera
+<comLinea>.*      {if (!cabeceraLeida || flagV) {
+                        // Ignora el comentario, excepto si es la cabecera o flagV
+                        if (cabeceraLeida) cout<<"//"; // Es flagV
                         ECHO;   
                     }
                   }
-<comLinea>[\n]+	  { if (!cabeceraLeida) cout << endl;
+<comLinea>[\n]+	  { if (!cabeceraLeida || flagV) cout << endl;
                     if(nAmbito > 0){
                         BEGIN(funciones); // Añade 1 al contador de coms y finaliza el com.
                     }
@@ -164,24 +166,29 @@ funcion   [a-zA-Z~ ][a-zA-z0-9_,]*{esp}{variable}{esp}"("[^)\n]*")"{esp}"const"?
                         BEGIN(INITIAL);
                     }
                    }
-"/*"		                BEGIN (comParrafo); if (!cabeceraLeida) ECHO;
-
-<comParrafo>[^*]*           {if (!cabeceraLeida) {// Ignora el comentario, excepto si es la cabecera
-                                ECHO;   
-                              }
-                            }
-<comParrafo>"*"+[^*/\n]*    {if (!cabeceraLeida) {// Ignora los * no seguidos de / , excepto si es la cabecera
+"/*"		               { BEGIN (comParrafo); 
+                             if (!cabeceraLeida || flagV) {
+                             
+                                //if (cabeceraLeida) cout<<"/*";
                                 ECHO;
                               }
                             }
-<comParrafo>"*"+"/"         {
+<comParrafo>[^*]*           {if (!cabeceraLeida || flagV) {// Ignora el comentario, excepto si es la cabecera (o flagV...)
+                                
+                                ECHO;   
+                              }
+                            }
+<comParrafo>"*"+[^*/\n]*    {if (!cabeceraLeida || flagV) {// Ignora los * no seguidos de / , excepto si es la cabecera
+                                ECHO;
+                              }
+                            }
+<comParrafo>"*"+"/"         {   if (!cabeceraLeida || flagV) {
+                                        ECHO;
+                                    }
                                 if(nAmbito > 0){
                                     BEGIN(funciones); // Añade 1 al contador de coms y finaliza el com.
                                 }
-                                else{
-                                    if (!cabeceraLeida) {
-                                        ECHO;
-                                    }
+                                else {  
                                     BEGIN(INITIAL);
                                 }
                             }
@@ -199,7 +206,11 @@ class[ ]+                       BEGIN(clase); nAmbito++; finCabecera();
 <funciones>"public:"           { ; // Ignoramos public
                                     }
 
-<funciones>"/*"     BEGIN(comParrafo);
+<funciones>"/*"     { BEGIN (comParrafo); 
+                             if (!cabeceraLeida || flagV) {
+                                ECHO;
+                              }
+                            }
 <funciones>"//"		      BEGIN (comLinea);
 "//"		      BEGIN (comLinea); if (!cabeceraLeida) ECHO;
 
@@ -222,54 +233,65 @@ class[ ]+                       BEGIN(clase); nAmbito++; finCabecera();
                             if(--nAmbito == 0){ // Decrementamos un ámbito
                                 // Y si estamos en el 0, volvemos al modo inicial
                                 BEGIN(INITIAL);
+                                //cout << " // Ya no en clase " << endl;
                             }
                             else {
                                 //Si no, al modo "clase" (aún estamos en una)
+                                //cout << "// Aun en clase........" << endl;
                                 BEGIN(funciones); 
                             }
                            }
 <funciones>[\n]+           //cout << endl;
-[\n]+	                   cout << "\n";
-[^/\n]                     ECHO;
+[\n]+	                   //cout << "\n";//[^/\n]                     ECHO;
 
 %%
 
 
 int main(int argc, char* argv[]) {
-
+    int offsetEstupido = 0; // Guarrada para evitarme cambiar mas cosas
     if (argc<3) {
-        cerr << "Invocar como: \n " << argv[0] << " <fichero.hpp> <fichero.cpp>\n";
+        cerr << "Invocar como: \n " << argv[0] << " [-v] <fichero.hpp> <fichero.cpp>\n";
     }
     else {
+        if (argc == 4) {
+            if (string(argv[1]) != "-v") {
+                cerr << "Opcion " << argv[1]
+                     << " desconocida. (-v copia todos los comentarios, por defecto no)" << endl;
+            }
+            else {
+                 flagV = true; // Opcion verbosa
+                 offsetEstupido = 1; // Hay un parametro de mas
+            }
+        }
         int fd[2];
         close(0);
-        if ( (fd[0] = open(argv[1], O_RDONLY)) == -1) {
-            cerr << "Error al abrir el .hpp\n";
+        if ( (fd[0] = open(argv[1+offsetEstupido], O_RDONLY)) == -1) {
+            cerr << "Error al abrir el .hpp (" << argv[1+offsetEstupido] << ")" << endl;
             exit(1);
         }
         if (fd[0] != 0) {
             cerr << "Entrada no redireccionada correctamente\n";
             exit(1);
         }
-        if ( (fd[1] = creat(argv[2], 0640)) == -1) {
+        if ( (fd[1] = creat(argv[2+offsetEstupido], 0640)) == -1) {
             cerr << "Error al crear el .cpp\n";
             exit(1);
         }
         close(fd[1]);
         close(1);
-        if( (fd[1] = open(argv[2], O_WRONLY)) != 1) {
+        if( (fd[1] = open(argv[2+offsetEstupido], O_WRONLY)) != 1) {
             cerr << "Salida no redireccionada\n";
             exit(1);
         }
-        
-        include = string(argv[1]); // include el .hpp al principio
-        
+
+        include = string(argv[1+offsetEstupido]); // include el .hpp al principio
+
         // Cosas de Flex++:
         FlexLexer* lexer = new yyFlexLexer;
         while (lexer -> yylex() != 0);
+
         
-        
-    	cerr << "Todo correcto, " << argv[2] << " creado\n";
+    	cerr << "Todo correcto, " << argv[2+offsetEstupido] << " creado\n";
     }
     return 0;
 }
