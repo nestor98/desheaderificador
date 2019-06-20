@@ -14,4 +14,5 @@ No *muy* probado.\
 
 Problemas:\
   -Posibles fallos con tipos de datos genéricos, no lo he probado. \
-  -Lo mismo con casos raros de herencias
+  -Lo mismo con casos raros de herencias \
+  -*POR ARREGLAR*
